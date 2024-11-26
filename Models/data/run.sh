@@ -2,7 +2,7 @@
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=2
 #SBATCH --mem=64g
-#SBATCH -J "LITE_create_tensors"
+#SBATCH -J "FULL_create_tensors"
 #SBATCH -p short
 #SBATCH -t 4:00:00
 #SBATCH --mail-user=jwbuchta@wpi.edu
@@ -16,7 +16,7 @@ echo "INFO [run.sh] Starting execution on $now"
 
 #source /home/jwbuchta/CS539_Project/Autoencoder/venv_autoencoder/bin/activate
 #which $HOME/CS539_Project/Autoencoder/venv_autoencoder/bin/python
-$HOME/CS539_Project/Autoencoder/venv_autoencoder/bin/python gen_spectrograms.py
+$HOME/CS539_Project/Autoencoder/venv_autoencoder/bin/python gen_spec_tensors.py
 
 #sleep 600
 

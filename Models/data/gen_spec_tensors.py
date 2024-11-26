@@ -94,7 +94,7 @@ if __name__=="__main__":
                 if(os.path.isfile(path)):
                     # Catch librosa errors
                     try:
-                        mel_db = get_mel_db(path)
+                        mel_db = get_mel_db(path, n_mels=128)
                         if(mel_db.shape[1] >= 1290):
                             print(f"Shape: {mel_db.shape}")
                             mel_db = mel_db[0:, 0:1290]
@@ -110,7 +110,7 @@ if __name__=="__main__":
                         error_list.append(path)
     
     spectrogram_tensors = torch.stack(tensor_list)
-    spectrogram_tensors = spectrogram_tensors[0:12000].clone()
+    # spectrogram_tensors = spectrogram_tensors[0:12000].clone()
     print(f"INFO: Tensor shape: {spectrogram_tensors.shape}")
     print(f"INFO: Number of errors: {len(error_list)}")
     torch.save(spectrogram_tensors, "spectrogram_tensors_lite.pt")
