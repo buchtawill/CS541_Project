@@ -3,9 +3,7 @@
 import librosa, librosa.display
 import numpy as np
 import matplotlib.pyplot as plt
-import IPython.display as ipd
-import sounddevice as sd
-from mutagen import File
+# import IPython.display as ipd
 import os
 import torch
 from tqdm import tqdm
@@ -65,7 +63,7 @@ def get_spectrogram_db(path, n_fft=2048, hop_length=512, sr=22050):
 
     return spectrogram_db
 
-def get_mel_db(path, n_fft=2048, hop_length=512, n_mels=128, sr=22050):
+def get_mel_db(path, n_fft=2048, hop_length=512, n_mels=256, sr=22050):
     signal, sr = librosa.load(path, sr=sr)
     mel = librosa.feature.melspectrogram(y=signal, n_fft=n_fft, hop_length=hop_length, sr=sr, n_mels=n_mels)
     mel_db = librosa.power_to_db(mel, ref=np.max(mel))
@@ -73,23 +71,46 @@ def get_mel_db(path, n_fft=2048, hop_length=512, n_mels=128, sr=22050):
 
 if __name__=="__main__":
 
-    path = "C:\\Users\\bucht\\OneDrive\\Desktop\\CS541_SongShifter\\Models\\data\\000\\000002.mp3"
-    dir = "C:\\Users\\bucht\\OneDrive\\Desktop\\CS541_SongShifter\\Models\\data\\000"
-    names = os.listdir(dir)
+    fma_path = 'data/fma_medium'
+    
+    fma_dirs = []
+    # 0...155
+    for i in range(156):
+        fma_dirs.append(fma_path+f"/{i:>03}")
 
     n_fft, hop_length, sr = 2048, 512, 22050
 
     # Convert the spectrogram back to audio
     tensor_list = []
-    for name in tqdm(names):
-        path = dir + "\\" + name
-        mel_db = get_mel_db(path)
-        mel_db = mel_db[0:, 0:1290]
-        # print("Spectrogram Shape: " + str(get_spectrogram_db(path).shape))
-        spec_tensor = torch.from_numpy(mel_db)
+    error_list = []
+    # dir: data/fma_medium/000, ...
+    for dir in fma_dirs:
+        print(f"INFO: Processing dir {dir}")
+        names = os.listdir(dir)
+        for name in names:
+            if(name.endswith('.mp3')):
+                path = dir + '/' + name
+                print(f"  INFO: Processing song {path}. ", flush=True, end='')
+                if(os.path.isfile(path)):
+                    # Catch librosa errors
+                    try:
+                        mel_db = get_mel_db(path)
+                        if(mel_db.shape[1] >= 1290):
+                            print(f"Shape: {mel_db.shape}")
+                            mel_db = mel_db[0:, 0:1290]
+                            # print("Spectrogram Shape: " + str(get_spectrogram_db(path).shape))
+                            spec_tensor = torch.from_numpy(mel_db)
 
-        tensor_list.append(spec_tensor)
+                            tensor_list.append(spec_tensor)
+                        else:
+                            print(f"Not adding, shape: {mel_db.shape}")
+                    except:
+                        print()
+                        print(f"  ERROR: Error opening {path}")
+                        error_list.append(path)
     
     spectrogram_tensors = torch.stack(tensor_list)
-    print(f"Tensor shape: {spectrogram_tensors.shape}")
-    torch.save(spectrogram_tensors, "spectrogram_tensors_test.pt")
+    spectrogram_tensors = spectrogram_tensors[0:12000].clone()
+    print(f"INFO: Tensor shape: {spectrogram_tensors.shape}")
+    print(f"INFO: Number of errors: {len(error_list)}")
+    torch.save(spectrogram_tensors, "spectrogram_tensors_lite.pt")
