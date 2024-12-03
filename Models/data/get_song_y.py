@@ -6,29 +6,39 @@ from collections import Counter
 # File paths
 genres_csv = "fma_metadata/genres.csv"
 tracks_csv = "fma_metadata/tracks_trimmed.csv"
-mp3_folder = "fma_medium"
+mp3_folder = "fma_small"
 output_file = "mp3_titles_and_genres.txt"
 
 def load_genres(genres_csv):
-    """Load genres from genres.csv into a dictionary."""
+    """Load genres from genres.csv into a dictionary, accounting for top-level genres."""
     genres = {}
     genre_track_count = {}
+    top_level_map = {}
+    
     with open(genres_csv, 'r', encoding='utf-8') as file:
         reader = csv.DictReader(file)
         for row in reader:
             try:
                 genre_id = int(row['genre_id'])
                 title = row['title']
+                top_level = int(row['top_level'])
                 num_tracks = int(row['#tracks'])
+                
+                # Map genre_id to title
                 genres[genre_id] = title
+                # Track number of tracks per genre
                 genre_track_count[genre_id] = num_tracks
+                # Map genre_id to its top-level genre ID
+                top_level_map[genre_id] = top_level
             except ValueError:
                 continue  # Skip invalid rows
-    return genres, genre_track_count
+                
+    return genres, genre_track_count, top_level_map
 
-def load_tracks(tracks_csv, genre_track_count):
-    """Load track genre mapping from tracks_trimmed.csv."""
+def load_tracks(tracks_csv, genre_track_count, top_level_map):
+    """Load track genre mapping from tracks_trimmed.csv, ensuring top-level genres are used."""
     tracks = {}
+    
     with open(tracks_csv, 'r', encoding='utf-8') as file:
         reader = csv.DictReader(file)
         for row in reader:
@@ -38,9 +48,12 @@ def load_tracks(tracks_csv, genre_track_count):
                 if genre_ids:
                     # Select the genre ID with the most tracks
                     genre_id = max((int(gid) for gid in genre_ids), key=lambda gid: genre_track_count.get(gid, 0))
-                    tracks[track_id] = genre_id
+                    # Map to top-level genre
+                    top_level_id = top_level_map.get(genre_id, genre_id)
+                    tracks[track_id] = top_level_id
             except (ValueError, KeyError):
                 continue  # Skip invalid rows
+                
     return tracks
 
 def match_mp3_files(mp3_folder, tracks, genres):
@@ -87,8 +100,8 @@ def write_output(output_file, mp3_data):
             file.write(f"{file_name}, {genre_id}, {genre}\n")
             
 def main():
-    genres, genre_track_count = load_genres(genres_csv)
-    tracks = load_tracks(tracks_csv, genre_track_count)
+    genres, genre_track_count, top_level_map = load_genres(genres_csv)
+    tracks = load_tracks(tracks_csv, genre_track_count, top_level_map)
     genre_counts = count_genres(mp3_folder, tracks, genres)
     
     mp3_data = match_mp3_files(mp3_folder, tracks, genres)

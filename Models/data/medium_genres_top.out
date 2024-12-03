@@ -1,0 +1,20 @@
+INFO [run.sh] Starting execution on Tue 03 Dec 2024 12:29:43 AM EST
+Output written to mp3_titles_and_genres.txt
+Genre Counts (Sorted by Frequency):
+Rock: 7103
+Electronic: 6313
+Experimental: 2219
+Hip-Hop: 2201
+Folk: 1519
+Instrumental: 1350
+Pop: 1186
+International: 1018
+Classical: 619
+Old-Time / Historic: 510
+Jazz: 384
+Country: 178
+Soul-RnB: 154
+Spoken: 118
+Blues: 74
+Easy Listening: 21
+INFO [run.sh] Finished execution at Tue 03 Dec 2024 12:29:44 AM EST
