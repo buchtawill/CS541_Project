@@ -6,8 +6,8 @@ from collections import Counter
 # File paths
 genres_csv = "fma_metadata/genres.csv"
 tracks_csv = "fma_metadata/tracks_trimmed.csv"
-mp3_folder = "fma_small"
-output_file = "mp3_titles_and_genres.txt"
+mp3_folder = "fma_medium"
+output_file = "mp3_titles_and_genres_medium.txt"
 
 def load_genres(genres_csv):
     """Load genres from genres.csv into a dictionary, accounting for top-level genres."""
@@ -96,8 +96,8 @@ def write_output(output_file, mp3_data):
     """Write the MP3 file titles and their genres to an output file."""
     with open(output_file, 'w') as file:
         for mp3_title, genre_id, genre in mp3_data:
-            file_name = os.path.basename(mp3_title)
-            file.write(f"{file_name}, {genre_id}, {genre}\n")
+            # file_name = os.path.basename(mp3_title)
+            file.write(f"{mp3_title}, {genre_id}, {genre}\n")
             
 def main():
     genres, genre_track_count, top_level_map = load_genres(genres_csv)

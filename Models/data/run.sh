@@ -16,7 +16,7 @@ echo "INFO [run.sh] Starting execution on $now"
 
 #source /home/jwbuchta/CS539_Project/Autoencoder/venv_autoencoder/bin/activate
 #which $HOME/CS539_Project/Autoencoder/venv_autoencoder/bin/python
-$HOME/CS539_Project/Autoencoder/venv_autoencoder/bin/python get_song_y.py
+$HOME/CS539_Project/Autoencoder/venv_autoencoder/bin/python gen_spec_tensors.py
 
 #sleep 600
 
