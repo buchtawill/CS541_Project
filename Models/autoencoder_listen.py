@@ -18,18 +18,21 @@ from autoencoder_conv import Autoencoder_FullyConv
 # Experimental Pop Models\data\fma_small\153\153956.mp3
 
 # Neural Network
-autoencoder_NN_state_dict = torch.load(r"trained_autoencoder_conv_3.pth")
+autoencoder_NN_path = r"trained_autoencoder_conv_3.pth"
+autoencoder_NN_state_dict = torch.load(autoencoder_NN_path, weights_only=True)
 Autoencoder_NN = Autoencoder_FullyConv()
+Autoencoder_NN.load_state_dict(autoencoder_NN_state_dict)
 Autoencoder_NN.eval()
 
 # r"Models\data\fma_small\043\043020.mp3"
 # input_song = r"Models\data\fma_small\112\112066.mp3"
-# input_song = r"Models\test_song_001083.mp3"
+# input_song = r"Models\test_song_001083.mp3" # Tom's path
 input_song = r"Path\to\test_song.mp3"
 sr = 22050
 
 signal, sr = librosa.load(input_song, sr=sr)
 
+# Generate Mel spectrogram
 mel_db = get_mel_db(path=input_song, n_mels=128)
 mel_db = mel_db[:, :1290]
 
@@ -53,19 +56,41 @@ mel_tensor = torch.tensor(
 loss = mse_loss(autoencoded_mel, mel_tensor)
 print(f"MSE Loss: {loss.item():.6f}")
 
+# Convert autoencoded Mel spectrogram to NumPy and denormalize
 autoencoded_mel_arr = autoencoded_mel.cpu().detach().numpy()
-reconstructed_nn_mel = reconstruct_audio_mel(autoencoded_mel_arr.reshape(mel_db.shape[0], mel_db.shape[1]), sr=sr)
+mel_db_autoencoded = (autoencoded_mel_arr * 80) - 80
+reconstructed_nn_mel = reconstruct_audio_mel(mel_db_autoencoded.reshape(mel_db.shape[0], mel_db.shape[1]), sr=sr)
 
 def play_audio(audio, sr, description):
     print(f"\nPlaying {description} (Ctrl+C to skip)")
     try:
         sd.play(audio, sr)
-        while sd.get_stream().active: # sd.wait() blocks signal handling, so repeatedly sleep instead
+        while sd.get_stream().active: # sd.wait() blocks Ctrl+C, so repeatedly sleep instead
             sd.sleep(100)
     except KeyboardInterrupt:
         sd.stop()
         print(f"Skipped {description}")
 
+def plot_spectrograms(specs, titles, sr): # Plot multiple spectrograms side by side
+    fig, axes = plt.subplots(1, len(specs), figsize=(15, 5))
+    
+    for i, (spec, title) in enumerate(zip(specs, titles)):
+        img = librosa.display.specshow(spec, 
+            y_axis='mel', 
+            x_axis='time',
+            sr=sr,
+            ax=axes[i])
+        axes[i].set_title(title)
+    
+    plt.colorbar(img, ax=axes, format='%+2.0f dB')
+    plt.show()
+
 play_audio(signal, sr, "Original")
 play_audio(reconstructed_mel, sr, "Reconstructed")
 play_audio(reconstructed_nn_mel, sr, "Autoencoded and Reconstructed")
+
+spectrograms = [mel_db, 
+                mel_db_autoencoded.reshape(mel_db.shape[0], mel_db.shape[1])]
+titles = ['Original', 'Autoencoded']
+print('Plotting spectrograms...')
+plot_spectrograms(spectrograms, titles, sr)
