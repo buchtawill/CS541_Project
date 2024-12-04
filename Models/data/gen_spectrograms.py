@@ -38,11 +38,11 @@ def reconstruct_audio(spectrogram_db, n_fft, hop_length, num_iters=30):
     
     return reconstructed_audio
 
-def reconstruct_audio_mel(mel_db, n_fft=2048, hop_length=512, ref=0, n_iter=64):
+def reconstruct_audio_mel(mel_db, n_fft=2048, hop_length=512, sr=22050, ref=0, n_iter=64):
     if (ref==0): # No manually set reference
         ref = 10 ** (np.max(mel_db) / 10.0)
     mel = librosa.db_to_power(mel_db, ref=ref)
-    stft = librosa.feature.inverse.mel_to_stft(mel_db, sr=sr, n_fft=n_fft, power=2.0)
+    stft = librosa.feature.inverse.mel_to_stft(mel, sr=sr, n_fft=n_fft, power=2.0)
     reconstructed_audio = librosa.griffinlim(stft, hop_length=hop_length, n_iter=n_iter)
     return reconstructed_audio
 
