@@ -10,12 +10,12 @@ from torch.utils.tensorboard import SummaryWriter
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Hyperparameters
-BATCH_SIZE = 16
-LEARNING_RATE = 5e-4
-NUM_EPOCHS = 500
+BATCH_SIZE = 32
+LEARNING_RATE = 1e-3
+NUM_EPOCHS = 250
 
-TRAINED_MODEL_NAME = "trained_autoencoder_conv_3.pth"
-TENSORBOARD_LOG_DIR = 'runs/autoencoder_fully_conv_3'
+TRAINED_MODEL_NAME = "trained_autoencoder_conv_halfsize_linear.pth"
+TENSORBOARD_LOG_DIR = 'runs/autoencoder_fully_conv_halfsize_linear'
 
 def train_autoencoder(model, train_loader, optimizer, criterion, device, writer, epoch):
     model.train()
@@ -35,9 +35,9 @@ def train_autoencoder(model, train_loader, optimizer, criterion, device, writer,
         
         writer.add_scalar('Loss/batch', loss.item(), epoch * len(train_loader) + batch_idx)
         
-        if batch_idx % 100 == 0:
-            writer.add_images('Original', batch[:4], epoch * len(train_loader) + batch_idx)
-            writer.add_images('Reconstructed', outputs[:4], epoch * len(train_loader) + batch_idx)
+        # if batch_idx % 100 == 0:
+        #     writer.add_images('Original', batch[:4], epoch * len(train_loader) + batch_idx)
+        #     writer.add_images('Reconstructed', outputs[:4], epoch * len(train_loader) + batch_idx)
     
     avg_loss = total_loss / len(train_loader)
     return avg_loss

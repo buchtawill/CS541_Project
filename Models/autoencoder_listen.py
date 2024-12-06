@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import IPython.display as ipd
 from mutagen import File
 from autoencoder_conv import Autoencoder_FullyConv
+import soundfile as sf
 
 # Qualitatively allows one to listen to autoencoder
 
@@ -18,7 +19,7 @@ from autoencoder_conv import Autoencoder_FullyConv
 # Experimental Pop Models\data\fma_small\153\153956.mp3
 
 # Neural Network
-autoencoder_NN_path = r"trained_autoencoder_conv_3.pth"
+autoencoder_NN_path = r"trained_autoencoder_conv_halfsize_linear_1024.pth"
 autoencoder_NN_state_dict = torch.load(autoencoder_NN_path, weights_only=True)
 Autoencoder_NN = Autoencoder_FullyConv()
 Autoencoder_NN.load_state_dict(autoencoder_NN_state_dict)
@@ -26,8 +27,8 @@ Autoencoder_NN.eval()
 
 # r"Models\data\fma_small\043\043020.mp3"
 # input_song = r"Models\data\fma_small\112\112066.mp3"
-# input_song = r"Models\test_song_001083.mp3" # Tom's path
-input_song = r"Path\to\test_song.mp3"
+input_song = r"Models\yummy.mp3" # Tom's path
+# input_song = r"Path\to\test_song.mp3"
 sr = 22050
 
 signal, sr = librosa.load(input_song, sr=sr)
@@ -85,12 +86,26 @@ def plot_spectrograms(specs, titles, sr): # Plot multiple spectrograms side by s
     plt.colorbar(img, ax=axes, format='%+2.0f dB')
     plt.show()
 
-play_audio(signal, sr, "Original")
-play_audio(reconstructed_mel, sr, "Reconstructed")
-play_audio(reconstructed_nn_mel, sr, "Autoencoded and Reconstructed")
+save_reconstructed = True
+save_autoencoded = True
+model_tag = "linear_1024"
+if save_reconstructed:
+    print("Saving reconstructed mel")
+    sf.write(input_song.replace('.mp3', f'_{model_tag}_mel_reconstructed.wav'), reconstructed_mel, sr)
+if save_autoencoded:
+    print("Saving autoencoded mel")
+    sf.write(input_song.replace('.mp3', f'_{model_tag}_autoencoded.wav'), reconstructed_nn_mel, sr)
 
-spectrograms = [mel_db, 
-                mel_db_autoencoded.reshape(mel_db.shape[0], mel_db.shape[1])]
-titles = ['Original', 'Autoencoded']
-print('Plotting spectrograms...')
-plot_spectrograms(spectrograms, titles, sr)
+do_play_audio = True
+if do_play_audio:
+    # play_audio(signal, sr, "Original")
+    play_audio(reconstructed_mel, sr, "Reconstructed")
+    play_audio(reconstructed_nn_mel, sr, "Autoencoded and Reconstructed")
+
+do_plot_spectrograms = True
+if do_plot_spectrograms:
+    spectrograms = [mel_db, 
+                    mel_db_autoencoded.reshape(mel_db.shape[0], mel_db.shape[1])]
+    titles = ['Original', 'Autoencoded']
+    print('Plotting spectrograms...')
+    plot_spectrograms(spectrograms, titles, sr)
