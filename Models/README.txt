@@ -1,12 +1,13 @@
 Put PyTorch here
 
-Merged Genres:
-genres, (ids)
-Electronic, Ambient Electronic, techno (15, 42, 181)
-Rock, Indie-Rock, Psych-Rock
-Hip-hop
-Punk
-Folk
-Instrumental
-Pop, experimental pop
-Classical
+Genre maps:
+GENRE_MAP_ID_NAME = {
+    12      :   'Rock',
+    15      :   'Electronic',
+    38      :   'Experimental',
+    211     :   'Hip-Hop',
+    17      :   'Folk',
+    1235    :   'Instrumental',
+    10      :   'Pop',
+    5       :   'Classical'
+}
