@@ -6,7 +6,6 @@ from spectrogram_dataset import SpectrogramDataset
 from tqdm import tqdm
 from genre_shifter_fully_connected import Genre_Shifter_Fully_Connected
 from autoencoder_conv import Autoencoder_FullyConv, Autoencoder_ConvLinear
-
 from torch.utils.tensorboard import SummaryWriter
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -39,18 +38,18 @@ def genre_shifter_loss(outputs, batch, autoencoder_model_path, classifier_model_
     # Get genre classifier model
     genre_classifier_NN_path = classifier_model_path
     genre_classifier_NN_state_dict = torch.load(genre_classifier_NN_path, weights_only=True)
-    Genre_Classifier_NN = Genre_Classifier() # TODO need model to load
+    Genre_Classifier_NN = Genre_Classifier() # TODO parker model
     Genre_Classifier_NN.load_state_dict(genre_classifier_NN_state_dict)
     Genre_Classifier_NN.eval() # Set to evaluate stuff for loss of genre shifter
 
     # Note that outputs are the outputs of the genre shifter only, need to load other outputs from fixed models
     with torch.no_grad():
         autoencoder_classifier_outputs = Autoencoder_NN(outputs)
-        # TODO outputs need to be "chopped" into 3 second clips for Genre_Classifier (should probably break this out into it's own section)
+        # TODO parker outputs need to be "chopped" into 3 second clips for Genre_Classifier (should probably break this out into it's own section)
         genre_classifier_outputs = Genre_Classifier_NN(outputs) 
 
     similarity_loss = nn.MSELoss(autoencoder_classifier_outputs, batch) 
-    classification_loss = nn.MSELoss(genre_classifier_outputs, batch) 
+    classification_loss = nn.Softmax(genre_classifier_outputs, batch) 
 
     # Balance keeping the song similar and tricking the classifier into a new genre with alpha
     overall_loss = (alpha * similarity_loss) + (1 - alpha) * (classification_loss)
@@ -93,7 +92,7 @@ def main():
         return
 
     # Initialize model, optimizer, and loss function
-    model = Genre_Shifter_FullyConnected().to(DEVICE)
+    model = Genre_Shifter_Fully_Connected().to(DEVICE)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     criterion = lambda outputs, batch: genre_shifter_loss(outputs, batch, 
                                                           AUTOENCODER_NN_PATH, GENRE_CLASSIFIER_NN_PATH,
