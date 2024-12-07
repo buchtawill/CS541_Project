@@ -16,10 +16,10 @@ from spectrogram_dataset import SpectrogramDataset
 
 # import torchinfo
 
-# import torchinfo
+import torchinfo
 
 NUM_EPOCHS = 100
-BATCH_SIZE = 2
+BATCH_SIZE = 4
 LEARN_RATE = 5e-4
 
 def model_dataloader_inference(model, dataloader, device, criterion, optimzer):
@@ -33,17 +33,17 @@ def model_dataloader_inference(model, dataloader, device, criterion, optimzer):
         optimizer(torch.optim): Optimizer for NN
     """
     running_loss = 0.0
-    for batch in dataloader:
+    for batch in tqdm(dataloader):
         
         optimizer.zero_grad()
         
         batch = batch.to(device)
         
-        print(f"INFO [model_dataloader_inference()] batch shape:     {batch.shape}")
         inference = model(batch)
-        print(f"INFO [model_dataloader_inference()] inference shape: {inference.shape}")
-        exit()
         loss = criterion(inference, batch)
+        
+        # print(f"INFO [model_dataloader_inference()] batch shape:     {batch.shape}")
+        # print(f"INFO [model_dataloader_inference()] inference shape: {inference.shape}")
         
         if(optimzer is not None):
             loss.backward()
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     model = AutoencoderLargeKernels().to(device)
     # model.load_state_dict(torch.load('./saved_weights/100E_5em4_b64.pth', weights_only=True))
     
-    # torchinfo.summary(model, input_size=(8, 1, 128, 1290))
+    torchinfo.summary(model, input_size=(4, 1, 128, 1290))
     # exit()
     
     criterion = nn.MSELoss()

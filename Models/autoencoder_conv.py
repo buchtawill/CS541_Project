@@ -83,20 +83,20 @@ class AutoencoderLargeKernels(nn.Module):
         
         # Decoder
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(512, 512, kernel_size=3, stride=2, padding=1, output_padding=(1, 0)),  # Output: 512 x 8 x 81
+            nn.ConvTranspose2d(512, 512, kernel_size=3, stride=(2, 4), padding=(1, 0), output_padding=(1, 0)),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.ConvTranspose2d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=(1, 0)),  # Output: 256 x 16 x 162
+            nn.ConvTranspose2d(512, 256, kernel_size=3, stride=(2, 3), padding=(1, 0), output_padding=(1, 1)),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=(1, 1)),  # Output: 128 x 32 x 323
+            nn.ConvTranspose2d(256, 128, kernel_size=5, stride=(2, 3), padding=(2, 0), output_padding=(1, 2)),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.ConvTranspose2d(128, 64, kernel_size=7, stride=2, padding=3, output_padding=(1, 1)),  # Output: 64 x 64 x 645
+            nn.ConvTranspose2d(128, 64, kernel_size=7, stride=2, padding=3, output_padding=(1, 1)),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.ConvTranspose2d(64, 1, kernel_size=9, stride=2, padding=4, output_padding=(1, 1)),  # Output: 1 x 128 x 1290
+            nn.ConvTranspose2d(64, 1, kernel_size=9, stride=2, padding=(4, 3), output_padding=(1, 1)),
         )
         
-        bottleneck_size = 8192
-        self.linear_down = nn.Linear(512 * 4 * 9, 8192)
-        self.linear_up = nn.Linear(8192, 512 * 4 * 41)
+        bottleneck_size = 4096
+        self.linear_down = nn.Linear(512 * 4 * 9, bottleneck_size)
+        self.linear_up = nn.Linear(bottleneck_size, 512 * 4 * 9)
         
     def forward(self, x):
         # Add channel dimension to x
@@ -108,14 +108,11 @@ class AutoencoderLargeKernels(nn.Module):
         # print(f"Encoded shape: {x.shape}")
         x = self.linear_up(x)
         
-        x = x.view(-1, 512, 4, 41)
+        x = x.view(-1, 512, 4, 9)
         
         x = self.decoder(x)
-        # print(f"Decoded shape: {x.shape}")
-            
-        # Add padding to match the output size of (128, 1290)
-        padded_output = F.pad(x, (0, 2, 0, 0))
-        return padded_output
+        
+        return x
         
 # Convolutional autoencoder with linear layers (latent space shape: [batch_size, 512(LATENT_VECTOR_SIZE)])
 # class Autoencoder_ConvLinear(nn.Module):
