@@ -5,11 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 # import IPython.display as ipd
 import os
-<<<<<<< HEAD
-import torch
-from tqdm import tqdm
-
-=======
 import csv
 import torch
 from tqdm import tqdm
@@ -36,7 +31,6 @@ GENRE_MAP_ID_NAME = {
     5       :   'Classical'
 }
 
->>>>>>> gen_truth
 """
 # Here are some fuctions that seem to corrupt the audio, but I'm keeping around in case we try to get mel spectrogram to work.
 def reconstruct_audio_mel_broken(mel_spec_db, n_fft, sr, hop_length):
