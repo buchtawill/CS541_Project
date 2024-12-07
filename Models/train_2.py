@@ -16,8 +16,10 @@ from spectrogram_dataset import SpectrogramDataset
 
 # import torchinfo
 
+# import torchinfo
+
 NUM_EPOCHS = 100
-BATCH_SIZE = 16
+BATCH_SIZE = 2
 LEARN_RATE = 5e-4
 
 def model_dataloader_inference(model, dataloader, device, criterion, optimzer):
@@ -37,10 +39,10 @@ def model_dataloader_inference(model, dataloader, device, criterion, optimzer):
         
         batch = batch.to(device)
         
-        # print(f"INFO [model_dataloader_inference()] batch shape:     {batch.shape}")
+        print(f"INFO [model_dataloader_inference()] batch shape:     {batch.shape}")
         inference = model(batch)
-        # print(f"INFO [model_dataloader_inference()] inference shape: {inference.shape}")
-        
+        print(f"INFO [model_dataloader_inference()] inference shape: {inference.shape}")
+        exit()
         loss = criterion(inference, batch)
         
         if(optimzer is not None):
@@ -103,7 +105,7 @@ if __name__ == '__main__':
     model = AutoencoderLargeKernels().to(device)
     # model.load_state_dict(torch.load('./saved_weights/100E_5em4_b64.pth', weights_only=True))
     
-    # torchinfo.summary(model, input_size=(16, 1, 128, 1290))
+    # torchinfo.summary(model, input_size=(8, 1, 128, 1290))
     # exit()
     
     criterion = nn.MSELoss()
@@ -113,7 +115,7 @@ if __name__ == '__main__':
     seed = 50  # Set the seed for reproducibility
     torch.manual_seed(seed)
     print("INFO [train_2.py] Loading Tensor dataset")
-    full_dataset = SpectrogramDataset(r"C:\Users\bucht\OneDrive - Worcester Polytechnic Institute (wpi.edu)\CS Courses\CS541_DL\project\spec_tens_512hop_128mel_x.pt")
+    full_dataset = SpectrogramDataset(r"C:\Users\bucht\OneDrive - Worcester Polytechnic Institute (wpi.edu)\CS Courses\CS541_DL\project\normal_128m_512h_x_medium.pt")
     
     # Create train and test datasets. Set small train set for faster training
 
