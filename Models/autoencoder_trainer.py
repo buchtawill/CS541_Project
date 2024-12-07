@@ -8,7 +8,6 @@ from autoencoder_conv import Autoencoder_ConvLinear, Autoencoder_FullyConv
 from autoencoder_masked_attn import AutoencoderTransformer
 from torch.utils.tensorboard import SummaryWriter
 
-
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Hyperparameters
@@ -18,7 +17,7 @@ NUM_EPOCHS = 500
 EVALUATE_FREQ = 10
 
 TRAINED_MODEL_NAME = "autoencoder_transformer_basesize.pth"
-# TENSORBOARD_LOG_DIR = f'runs/{TRAINED_MODEL_NAME}'
+TENSORBOARD_LOG_DIR = f'runs/{TRAINED_MODEL_NAME}'
 
 def train_autoencoder(model, train_loader, optimizer, criterion, device, writer, epoch):
     model.train()
@@ -44,7 +43,8 @@ def train_autoencoder(model, train_loader, optimizer, criterion, device, writer,
     
     avg_loss = total_loss / len(train_loader)
     return avg_loss
-def evaluate_autoencoder(model, test_loader, criterion, device):
+
+def evaluate_autoencoder(model, test_loader, criterion, device, writer, epoch):
     model.eval()
     total_loss = 0
     
@@ -62,7 +62,7 @@ def main():
     print("device: ", DEVICE)
     current_epoch = 0
     model = None
-    # writer = None
+    writer = None
 
     try:
         # Initialize datasets
@@ -85,7 +85,7 @@ def main():
         criterion = nn.MSELoss()
 
         # Initialize TensorBoard writer
-        # writer = SummaryWriter(TENSORBOARD_LOG_DIR)
+        writer = SummaryWriter(TENSORBOARD_LOG_DIR)
 
         # Training loop
         print("Training...")
@@ -93,7 +93,7 @@ def main():
             current_epoch = epoch + 1  
             train_loss = train_autoencoder(model, train_loader, optimizer, criterion, DEVICE)
             print(f"Epoch [{current_epoch}/{NUM_EPOCHS}], Train Loss: {train_loss:.6f}")
-            # writer.add_scalar('Loss/train', train_loss, epoch)
+            writer.add_scalar('Loss/train', train_loss, epoch)
             
             # if (epoch + 1) % EVALUATE_FREQ == 0:
             #     test_loss = evaluate_autoencoder(model, test_loader, criterion, DEVICE)
@@ -102,7 +102,7 @@ def main():
 
         # Save the trained model
         torch.save(model.state_dict(), TRAINED_MODEL_NAME)
-        # writer.close()
+        writer.close()
 
     except KeyboardInterrupt:
         print(f'\nTraining interrupted by user at epoch {current_epoch}.')
@@ -110,8 +110,8 @@ def main():
             early_save_name = TRAINED_MODEL_NAME.replace('.pth', f'_terminated_epoch_{current_epoch}.pth')
             torch.save(model.state_dict(), early_save_name)
             print(f'Model saved as {early_save_name}')
-        # if writer is not None:
-        #     writer.close()
+        if writer is not None:
+            writer.close()
 
 
 if __name__ == "__main__":

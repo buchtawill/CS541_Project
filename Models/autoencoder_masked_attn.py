@@ -119,4 +119,4 @@ class AutoencoderTransformer(nn.Module):
     def forward(self, x):
         latent = self.encode(x)
         recon = self.decode(latent)
-        return recon, latent
+        return recon
