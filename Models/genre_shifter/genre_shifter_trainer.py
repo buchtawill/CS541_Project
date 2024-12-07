@@ -127,28 +127,34 @@ def train_genre_shifter(model, Autoencoder_NN, Genre_Classifier_NN, train_loader
     total_loss = 0
     
     for batch_idx, batch in enumerate(tqdm(train_loader, desc='Training', leave=False)):
-        print("BATCH: ", batch, len(batch))
         mel_input = batch[0].float().to(device)
         genre_input = batch[1].float().to(device) # TODO shape is (16, 1024) for some reason
         
         optimizer.zero_grad()
 
         # Get encoded output for model
+        #print("TEST AE OUT ", Autoencoder_NN.encoder(mel_input).shape)
         shifted_encoder_output = Autoencoder_NN.encoder(mel_input)
         # TODO add one hot encoding to this
-        print("PARTS OF COMBINED SHAPE ", shifted_encoder_output.shape, genre_input.shape)
+        #print("PARTS OF COMBINED SHAPE ", shifted_encoder_output.shape, genre_input.shape)
         combined_tensor = torch.cat((shifted_encoder_output, genre_input, genre_input), dim=1) # TODO right now is using genre_input TWICE, so not changing genre at all
-        print("COMBINED TENSOR SHAPE ", combined_tensor.shape)
+        #print("COMBINED TENSOR SHAPE ", combined_tensor.shape)
         genre_shifter_output = model(combined_tensor) # Run encoder output into genre shifter
-        print("SHIFTED DECODER SIZE", shifted_decoder_output.size)
         shifted_decoder_output = Autoencoder_NN.decoder(genre_shifter_output)
+        shifted_decoder_output =  shifted_decoder_output[:, :, :, :1290] # Crop output since using decoder manually TODO make this part of decoder?
+        #print("SHIFTED DECODER OUTPUT", shifted_decoder_output.shape)
 
         # TODO figure out where GenreClassifier comes from? Just import and not parameter?
-        shifted_classifier_output = Genre_Classifier_NN(shifted_decoder_output) # TODO put PIECES into genre_classifier instead
         #loss = criterion(shifted_decoder_output, mel_input, genre_input)
         # TODO make loss througn criteron function again?!
-        similarity_loss = nn.MSELoss() # From keeping song similar 
-        classification_loss = split_clips_genre_classifier_output(shifted_classifier_output, Genre_Classifier_NN)
+        classification_means = split_clips_genre_classifier_output(shifted_decoder_output, Genre_Classifier_NN)
+        #print("Classification means: ", classification_means) # TODO classification means is not correct
+        mse_loss = nn.MSELoss()
+        similarity_loss = mse_loss(mel_input, shifted_decoder_output) # From keeping song similar
+
+        ce_loss = nn.CrossEntropyLoss()
+        classification_loss = ce_loss(classification_means, genre_input) # TODO desired output is just genre_input right now
+
         loss = (ALPHA * similarity_loss) + (1 - ALPHA) * classification_loss
         loss.backward()
         optimizer.step()
@@ -200,7 +206,6 @@ def main():
 
     # Training loop with progress bar
     print("Training...")
-    print("TRAIN ", genre_data.__getitem__(1))
     for epoch in tqdm(range(NUM_EPOCHS), desc='Epochs'):
         avg_loss = train_genre_shifter(model, Autoencoder_NN, Genre_Classifier_NN, train_loader, optimizer, DEVICE, writer, epoch)
         print(f"Epoch [{epoch+1}/{NUM_EPOCHS}], Loss: {avg_loss:.6f}")
