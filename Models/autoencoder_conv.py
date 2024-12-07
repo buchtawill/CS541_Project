@@ -96,6 +96,9 @@ class AutoencoderLargeKernels(nn.Module):
     def forward(self, x):
         # Add channel dimension to x
         x = self.encoder(x)
+        
+        # Encoded shape: [batch_size, 1024, 4, 41] (verified)
+        
         x = self.decoder(x)
         
         # Add padding to match the output size of (128, 1290)

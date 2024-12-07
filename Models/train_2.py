@@ -31,7 +31,7 @@ def model_dataloader_inference(model, dataloader, device, criterion, optimzer):
         optimizer(torch.optim): Optimizer for NN
     """
     running_loss = 0.0
-    for batch in tqdm(dataloader):
+    for batch in dataloader:
         
         optimizer.zero_grad()
         
