@@ -6,6 +6,7 @@ from spectrogram_dataset import SpectrogramDataset
 from tqdm import tqdm
 from genre_shifter_fully_connected import Genre_Shifter_Fully_Connected
 from autoencoder_conv import Autoencoder_FullyConv, Autoencoder_ConvLinear
+from Models.classifier import GenreClassifier
 from torch.utils.tensorboard import SummaryWriter
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -22,10 +23,36 @@ TENSORBOARD_LOG_DIR = "runs/genreshifter_test_1"
 AUTOENCODER_NN_PATH = "ae_samplepath/location.pth"
 GENRE_CLASSIFIER_NN_PATH = "gc_samplepath/location.pth"
 
-# TODO add documentation, but used as a criteron, with outputs and batch as the main inputs, the rest can be
-# curried into a lambda function when used. alpha=0 means seeks to trick classifier, alpha=1 seeks to make no changes (identity matrix optimal then).
 def genre_shifter_loss(outputs, batch, autoencoder_model_path, classifier_model_path, alpha):
-    # Load models needed for genre shifter
+    """
+        Calculate the loss for the genre shifter model using a combination of autoencoder reconstruction
+        loss and genre classification loss.
+
+        The function balances two objectives:
+        1. Maintaining similarity to the original audio (via autoencoder)
+        2. Changing the perceived genre (via genre classifier)
+
+        Args:
+            outputs (torch.Tensor): Output spectrograms from the genre shifter model
+                                  Shape: (batch_size, channels, freq_bins, time_frames)
+            batch (torch.Tensor): Original input spectrograms and their genre labels
+                                 Shape matches outputs for spectrogram data
+            autoencoder_model_path (str): Path to the pretrained autoencoder model weights
+            classifier_model_path (str): Path to the pretrained genre classifier model weights
+            alpha (float): Weight factor between similarity and classification loss
+                          Range [0,1] where:
+                          - alpha = 0: Focus entirely on changing genre
+                          - alpha = 1: Focus entirely on maintaining similarity
+
+        Returns:
+            torch.Tensor: Combined loss value balancing similarity preservation and genre modification
+
+        Notes:
+            - Processes spectrograms in 3-second segments (129 frames) for genre classification
+            - Uses pretrained models for both autoencoder and genre classifier
+            - Genre classifier expects 7 genre classes
+            - All tensor operations are performed with gradient calculation disabled
+        """
     # TODO would prefer in future if models had architecture saved too so they didn't need to be "applied" since they may have different shapes
    
     # Get autoencoder model
@@ -38,22 +65,43 @@ def genre_shifter_loss(outputs, batch, autoencoder_model_path, classifier_model_
     # Get genre classifier model
     genre_classifier_NN_path = classifier_model_path
     genre_classifier_NN_state_dict = torch.load(genre_classifier_NN_path, weights_only=True)
-    Genre_Classifier_NN = Genre_Classifier() # TODO parker model
+    Genre_Classifier_NN = GenreClassifier(input_shape=(1, 128, 129), num_genres=7)
     Genre_Classifier_NN.load_state_dict(genre_classifier_NN_state_dict)
     Genre_Classifier_NN.eval() # Set to evaluate stuff for loss of genre shifter
 
-    # Note that outputs are the outputs of the genre shifter only, need to load other outputs from fixed models
+    # Calculate loss
     with torch.no_grad():
         autoencoder_classifier_outputs = Autoencoder_NN(outputs)
-        # TODO parker outputs need to be "chopped" into 3 second clips for Genre_Classifier (should probably break this out into it's own section)
-        genre_classifier_outputs = Genre_Classifier_NN(outputs) 
-        # TODO average it out
 
-    similarity_loss = nn.MSELoss(autoencoder_classifier_outputs, batch) 
-    classification_loss = nn.Softmax(genre_classifier_outputs, batch) 
+        # Extract dimensions from outputs
+        batch_size, channels, freq_bins, time_frames = outputs.shape
+        segment_length = 129  # 3 seconds of frames as required by GenreClassifier
 
-    # Balance keeping the song similar and tricking the classifier into a new genre with alpha
-    overall_loss = (alpha * similarity_loss) + (1 - alpha) * (classification_loss)
+        num_segments = time_frames // segment_length
+
+        # Split into 3-second segments using unfold operation
+        segments = outputs.unfold(3, segment_length, segment_length)
+        # Adjust dimensions to match expected input format
+        segments = segments.transpose(1, 2)
+        # Reshape into format expected by classifier: (batch * segments, channels, freq_bins, segment_length)
+        segments = segments.reshape(-1, 1, freq_bins, segment_length)
+
+        genre_classifier_outputs = Genre_Classifier_NN(segments)
+
+
+        genre_classifier_outputs = genre_classifier_outputs.reshape(batch_size, num_segments, -1)
+        genre_classifier_outputs = torch.mean(genre_classifier_outputs, dim=1)
+
+    similarity_loss = nn.MSELoss()(autoencoder_classifier_outputs, batch)
+
+    # Convert logits to probabilities
+    genre_probs = nn.functional.softmax(genre_classifier_outputs, dim=1)
+    # Extract probability of the target genre for each sample
+    target_probs = torch.gather(genre_probs, 1, batch.unsqueeze(1))
+    # Classification loss is mean probability of original genre (want to minimize)
+    classification_loss = torch.mean(target_probs)
+
+    overall_loss = (alpha * similarity_loss) + (1 - alpha) * classification_loss
     return overall_loss
 
 def train_genre_shifter(model, train_loader, optimizer, criterion, device, writer, epoch):

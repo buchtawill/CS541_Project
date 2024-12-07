@@ -25,6 +25,3 @@ class Genre_Shifter_Fully_Connected(nn.Module):
         x = self.layers(x) 
         return x
 
-
-    
-
