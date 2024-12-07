@@ -9,50 +9,8 @@ DECODER_CHANNELS = [32, 16, 8, 1]  # Channels for each decoder layer
 STRIDE = 2                 # Stride for convolutional layers
 PADDING = 1                # Padding for convolutional layers
 
-LATENT_VECTOR_SIZE = 1024   # Size of the encoded feature vector (if using linear)
+LATENT_VECTOR_SIZE = 2048   # Size of the encoded feature vector (if using linear)
 
-# Fully convolutional autoencoder (latent space shape: )
-class Autoencoder_FullyConv(nn.Module):
-    def __init__(self):
-        super(Autoencoder_FullyConv, self).__init__()
-        
-        # Encoder
-        encoder_layers = []
-        for i in range(ENCODER_DEPTH):
-            in_channels = ENCODER_CHANNELS[i]
-            out_channels = ENCODER_CHANNELS[i + 1]
-            encoder_layers.extend([
-                nn.Conv2d(in_channels, out_channels, 
-                    kernel_size=KERNEL_SIZE, 
-                    stride=STRIDE, 
-                    padding=PADDING),
-                nn.LeakyReLU(0.2)
-            ])
-        
-        self.encoder = nn.Sequential(*encoder_layers)
-        
-        # Decoder
-        decoder_layers = []
-        
-        for i in range(DECODER_DEPTH):
-            in_channels = DECODER_CHANNELS[i]
-            out_channels = DECODER_CHANNELS[i + 1]
-            decoder_layers.extend([
-                nn.ConvTranspose2d(in_channels, out_channels,
-                    kernel_size=KERNEL_SIZE,
-                    stride=STRIDE,
-                    padding=PADDING,
-                    output_padding=1),
-                nn.LeakyReLU(0.2) if i < DECODER_DEPTH - 1 else nn.Sigmoid()
-            ])
-        
-        self.decoder = nn.Sequential(*decoder_layers)
-        
-    def forward(self, x):
-        x = self.encoder(x) 
-        x = self.decoder(x)
-        return x[:, :, :, :1290] # Crop the output to match the input size
-    
 # Convolutional autoencoder with linear layers (latent space shape: [batch_size, 512(LATENT_VECTOR_SIZE)])
 class Autoencoder_ConvLinear(nn.Module):
     def __init__(self):
@@ -103,3 +61,47 @@ class Autoencoder_ConvLinear(nn.Module):
         x = self.encoder(x)
         x = self.decoder(x)
         return x[:, :, :, :1290] # Crop the output to match the input size
+
+# Fully convolutional autoencoder (latent space shape: )
+class Autoencoder_FullyConv(nn.Module):
+    def __init__(self):
+        super(Autoencoder_FullyConv, self).__init__()
+        
+        # Encoder
+        encoder_layers = []
+        for i in range(ENCODER_DEPTH):
+            in_channels = ENCODER_CHANNELS[i]
+            out_channels = ENCODER_CHANNELS[i + 1]
+            encoder_layers.extend([
+                nn.Conv2d(in_channels, out_channels, 
+                    kernel_size=KERNEL_SIZE, 
+                    stride=STRIDE, 
+                    padding=PADDING),
+                nn.LeakyReLU(0.2)
+            ])
+        
+        self.encoder = nn.Sequential(*encoder_layers)
+        
+        # Decoder
+        decoder_layers = []
+        
+        for i in range(DECODER_DEPTH):
+            in_channels = DECODER_CHANNELS[i]
+            out_channels = DECODER_CHANNELS[i + 1]
+            decoder_layers.extend([
+                nn.ConvTranspose2d(in_channels, out_channels,
+                    kernel_size=KERNEL_SIZE,
+                    stride=STRIDE,
+                    padding=PADDING,
+                    output_padding=1),
+                nn.LeakyReLU(0.2) if i < DECODER_DEPTH - 1 else nn.Sigmoid()
+            ])
+        
+        self.decoder = nn.Sequential(*decoder_layers)
+        
+    def forward(self, x):
+        x = self.encoder(x) 
+        
+        x = self.decoder(x)
+        return x[:, :, :, :1290] # Crop the output to match the input size
+    

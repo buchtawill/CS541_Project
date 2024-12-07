@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import IPython.display as ipd
 from mutagen import File
-from autoencoder_conv import Autoencoder_FullyConv
+from autoencoder_conv import Autoencoder_ConvLinear, Autoencoder_FullyConv
 import soundfile as sf
 
 # Qualitatively allows one to listen to autoencoder
@@ -19,7 +19,8 @@ import soundfile as sf
 # Experimental Pop Models\data\fma_small\153\153956.mp3
 
 # Neural Network
-autoencoder_NN_path = r"trained_autoencoder_conv_halfsize_linear_1024.pth"
+# autoencoder_NN_path = r"fixed_autoencoder_convlinear_halfsize_1024_terminated_epoch_303.pth"
+autoencoder_NN_path = r"trained_autoencoder_conv_halfsize.pth"
 autoencoder_NN_state_dict = torch.load(autoencoder_NN_path, weights_only=True)
 Autoencoder_NN = Autoencoder_FullyConv()
 Autoencoder_NN.load_state_dict(autoencoder_NN_state_dict)
@@ -27,7 +28,7 @@ Autoencoder_NN.eval()
 
 # r"Models\data\fma_small\043\043020.mp3"
 # input_song = r"Models\data\fma_small\112\112066.mp3"
-input_song = r"Models\yummy.mp3" # Tom's path
+input_song = r"Models\howmanydays.mp3" # Tom's path
 # input_song = r"Path\to\test_song.mp3"
 sr = 22050
 
@@ -62,6 +63,14 @@ autoencoded_mel_arr = autoencoded_mel.cpu().detach().numpy()
 mel_db_autoencoded = (autoencoded_mel_arr * 80) - 80
 reconstructed_nn_mel = reconstruct_audio_mel(mel_db_autoencoded.reshape(mel_db.shape[0], mel_db.shape[1]), sr=sr)
 
+with torch.no_grad():
+    # Create a sample input tensor with the same shape as your mel spectrograms
+    sample_input = torch.zeros(1, 1, 128, 1290)  # [batch_size, channels, height, width]
+    # Get the latent representation
+    latent = Autoencoder_NN.encoder(sample_input)
+    print(f"Latent space shape: {latent.shape}")
+    # For the ConvLinear model, this should print [1, 2048] (batch_size, LATENT_VECTOR_SIZE)
+
 def play_audio(audio, sr, description):
     print(f"\nPlaying {description} (Ctrl+C to skip)")
     try:
@@ -88,7 +97,7 @@ def plot_spectrograms(specs, titles, sr): # Plot multiple spectrograms side by s
 
 save_reconstructed = True
 save_autoencoded = True
-model_tag = "linear_1024"
+model_tag = "halfsize_conv"
 if save_reconstructed:
     print("Saving reconstructed mel")
     sf.write(input_song.replace('.mp3', f'_{model_tag}_mel_reconstructed.wav'), reconstructed_mel, sr)
