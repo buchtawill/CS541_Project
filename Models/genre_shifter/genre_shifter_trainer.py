@@ -47,6 +47,7 @@ def genre_shifter_loss(outputs, batch, autoencoder_model_path, classifier_model_
         autoencoder_classifier_outputs = Autoencoder_NN(outputs)
         # TODO parker outputs need to be "chopped" into 3 second clips for Genre_Classifier (should probably break this out into it's own section)
         genre_classifier_outputs = Genre_Classifier_NN(outputs) 
+        # TODO average it out
 
     similarity_loss = nn.MSELoss(autoencoder_classifier_outputs, batch) 
     classification_loss = nn.Softmax(genre_classifier_outputs, batch) 

@@ -5,6 +5,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision import transforms
 import numpy as np
 from PIL import Image
+import matplotlib.pyplot as plt
 import os
 
 
@@ -396,9 +397,6 @@ def main():
             print(f"Validation Accuracy: {val_accuracy:.2f}%")
 
             if training_metrics and any(training_metrics.values()):
-                # Plot historical training metrics
-                import matplotlib.pyplot as plt
-
                 plt.figure(figsize=(12, 6))
                 plt.subplot(1, 2, 1)
                 if training_metrics['train_losses']:
@@ -423,5 +421,6 @@ def main():
 
         except Exception as e:
             print(f"Evaluation failed with error: {e}")
+
 if __name__ == "__main__":
     main()
