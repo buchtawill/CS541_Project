@@ -144,7 +144,7 @@ if __name__ == '__main__':
                  device=device)
                 
     tb_writer.flush()
-    torch.save(model.state_dict(), '.large_kernels.pth')
+    torch.save(model.state_dict(), './conv_linear_weights.pth')
     
     tEnd = time.time()
     print(f"INFO [train_2.py] Ending script. Took {tEnd-tstart:.2f} seconds.")

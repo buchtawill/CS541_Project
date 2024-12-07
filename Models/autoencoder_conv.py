@@ -10,7 +10,7 @@ ENCODER_CHANNELS = [1, 8, 16, 32]  # Channels for each encoder layer
 DECODER_CHANNELS = [32, 16, 8, 1]  # Channels for each decoder layer
 STRIDE = 2                 # Stride for convolutional layers
 PADDING = 1                # Padding for convolutional layers
-LATENT_VECTOR_SIZE = 1024
+LATENT_VECTOR_SIZE = 4096
 
 # Fully convolutional autoencoder (latent space shape: [batch_size, 256, 16, 162])
 class Autoencoder_FullyConv(nn.Module):
