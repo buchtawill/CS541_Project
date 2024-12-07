@@ -7,7 +7,6 @@ class SpectrogramDataset(Dataset):
             
             # Load the tensor and unsqueeze to add a channel dimension
             self.data = torch.load(tensors, weights_only=True).unsqueeze(1)
-            # self.data = (self.data + 80) / 80  # Normalize to [0, 1]
         except (FileNotFoundError, RuntimeError) as e:
             print(f"ERROR [spectrogram_dataset.py::__init__()] Error loading tensor file: {e}")
             raise Exception(e)

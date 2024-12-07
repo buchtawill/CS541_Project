@@ -2,9 +2,11 @@
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=4
 #SBATCH --mem=64g
-#SBATCH -J "fma_normalize"
+#SBATCH -J "train_large_autoencoder"
 #SBATCH -p short
-#SBATCH -t 2:00:00
+#SBATCH -t 5:00:00
+#SBATCH --gres=gpu:2
+#SBATCH -C H100|A100
 #SBATCH --mail-user=jwbuchta@wpi.edu
 #SBATCH --mail-type=BEGIN,FAIL,END
 
@@ -17,7 +19,7 @@ echo "INFO [run.sh] Starting execution on $now"
 #source /home/jwbuchta/CS539_Project/Autoencoder/venv_autoencoder/bin/activate
 #which $HOME/CS539_Project/Autoencoder/venv_autoencoder/bin/python
 # $HOME/CS539_Project/Autoencoder/venv_autoencoder/bin/python get_song_y.py
-$HOME/CS539_Project/Autoencoder/venv_autoencoder/bin/python gen_spec_tensors.py
+$HOME/CS539_Project/Autoencoder/venv_autoencoder/bin/python train_2.py
 # tar czf fma_medium.tar.gz ./fma_medium
 
 #sleep 600

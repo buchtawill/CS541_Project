@@ -7,7 +7,7 @@ from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
 from matplotlib import pyplot as plt
-# from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import StepLR
 import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
 
@@ -16,7 +16,7 @@ from spectrogram_dataset import SpectrogramDataset
 
 # import torchinfo
 
-NUM_EPOCHS = 100
+NUM_EPOCHS = 50
 BATCH_SIZE = 16
 LEARN_RATE = 5e-4
 
@@ -75,12 +75,12 @@ def train_normal(model,
         
         print(f'Epoch {epoch:>{6}} | Train loss: {train_loss:.8f} | Test Loss: {test_loss:.8f}', flush=True)
         
-        # if(epoch % 1 == 0):
-        #     low_res, hi_res_truth = next(iter(test_dataloader)) #get first images
-        #     low_res = low_res.to(device)
-        #     hi_res_truth = hi_res_truth.to(device)
-        #     inference = model(low_res)
-        #     # loss = criterion(inference, hi_res_truth)
+        # Step the scheduler to adjust the learning rate
+        scheduler.step()
+
+        # Log the current learning rate to TensorBoard
+        current_lr = scheduler.get_last_lr()[0]
+        tb_writer.add_scalar("Learning Rate", current_lr, epoch + 1)
             
 
 def sec_to_human(seconds):
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     seed = 50  # Set the seed for reproducibility
     torch.manual_seed(seed)
     print("INFO [train_2.py] Loading Tensor dataset")
-    full_dataset = SpectrogramDataset(r"C:\Users\bucht\OneDrive - Worcester Polytechnic Institute (wpi.edu)\CS Courses\CS541_DL\project\spec_tens_512hop_128mel_x.pt")
+    full_dataset = SpectrogramDataset('./data/spec_tens_512hop_128mel_x.pt')
     
     # Create train and test datasets. Set small train set for faster training
 
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_dataloader  = torch.utils.data.DataLoader(test_dataset,  batch_size=BATCH_SIZE, shuffle=True)
     print(f'INFO [train_2.py] Num training batches:      {len(train_dataloader)}', flush = True)
-    #scheduler = StepLR(optimizer=optimizer, step_size=20, gamma=0.5)
+    scheduler = StepLR(optimizer=optimizer, step_size=10, gamma=0.5)
     tb_writer = SummaryWriter()
     
     train_normal(model=model, 
@@ -138,7 +138,7 @@ if __name__ == '__main__':
                  test_dataloader=test_dataloader,
                  optimizer=optimizer, 
                  tb_writer=tb_writer, 
-                 scheduler=None, 
+                 scheduler=scheduler, 
                  criterion=criterion, 
                  device=device)
                 

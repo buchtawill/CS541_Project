@@ -76,14 +76,10 @@ class AutoencoderLargeKernels(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1),  # Output: 512 x 8 x 81
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(512, 1024, kernel_size=3, stride=2, padding=1),  # Output: 1024 x 4 x 41
-            nn.LeakyReLU(0.2, inplace=True),
         )
         
         # Decoder
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(1024, 512, kernel_size=3, stride=2, padding=1, output_padding=(1, 0)),  # Output: 512 x 8 x 81
-            nn.LeakyReLU(0.2, inplace=True),
             nn.ConvTranspose2d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=(1, 0)),  # Output: 256 x 16 x 162
             nn.LeakyReLU(0.2, inplace=True),
             nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=(1, 1)),  # Output: 128 x 32 x 323
@@ -91,6 +87,7 @@ class AutoencoderLargeKernels(nn.Module):
             nn.ConvTranspose2d(128, 64, kernel_size=7, stride=2, padding=3, output_padding=(1, 1)),  # Output: 64 x 64 x 645
             nn.LeakyReLU(0.2, inplace=True),
             nn.ConvTranspose2d(64, 1, kernel_size=9, stride=2, padding=4, output_padding=(1, 1)),  # Output: 1 x 128 x 1290
+            nn.Sigmoid()
         )
         
     def forward(self, x):
