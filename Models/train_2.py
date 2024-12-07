@@ -11,13 +11,13 @@ from torch.optim.lr_scheduler import StepLR
 import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
 
-from autoencoder_conv import AutoencoderLargeKernels
+from autoencoder_conv import *
 from spectrogram_dataset import SpectrogramDataset
 
 # import torchinfo
 
-NUM_EPOCHS = 50
-BATCH_SIZE = 16
+NUM_EPOCHS = 100
+BATCH_SIZE = 4
 LEARN_RATE = 5e-4
 
 def model_dataloader_inference(model, dataloader, device, criterion, optimzer):
@@ -37,11 +37,11 @@ def model_dataloader_inference(model, dataloader, device, criterion, optimzer):
         
         batch = batch.to(device)
         
-        # print(f"INFO [model_dataloader_inference()] batch shape:     {batch.shape}")
         inference = model(batch)
-        # print(f"INFO [model_dataloader_inference()] inference shape: {inference.shape}")
-        
         loss = criterion(inference, batch)
+        
+        # print(f"INFO [model_dataloader_inference()] batch shape:     {batch.shape}")
+        # print(f"INFO [model_dataloader_inference()] inference shape: {inference.shape}")
         
         if(optimzer is not None):
             loss.backward()
@@ -100,10 +100,11 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'INFO [train_2.py] Using device: {device} [torch version: {torch.__version__}]')
     print(f'INFO [train_2.py] Python version: {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}')
-    model = AutoencoderLargeKernels().to(device)
+    # model = AutoencoderLargeKernels().to(device)
+    model = Autoencoder_ConvLinear().to(device)
     # model.load_state_dict(torch.load('./saved_weights/100E_5em4_b64.pth', weights_only=True))
     
-    # torchinfo.summary(model, input_size=(16, 1, 128, 1290))
+    # torchinfo.summary(model, input_size=(4, 1, 128, 1290))
     # exit()
     
     criterion = nn.MSELoss()
@@ -113,7 +114,7 @@ if __name__ == '__main__':
     seed = 50  # Set the seed for reproducibility
     torch.manual_seed(seed)
     print("INFO [train_2.py] Loading Tensor dataset")
-    full_dataset = SpectrogramDataset('./data/spec_tens_512hop_128mel_x.pt')
+    full_dataset = SpectrogramDataset('./data/normal_128m_512h_x_medium.pt')
     
     # Create train and test datasets. Set small train set for faster training
 
