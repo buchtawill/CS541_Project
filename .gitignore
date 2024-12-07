@@ -1,3 +1,4 @@
 /Models/data/fma_small
 */*.pt
 */*.out
+*.pth

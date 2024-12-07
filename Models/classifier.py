@@ -8,9 +8,6 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 
-
-
-
 class MelSpectrogramDataset3Sec(Dataset):
     def __init__(self, data_file, label_file, segment_length=129, transform=None):
         """
