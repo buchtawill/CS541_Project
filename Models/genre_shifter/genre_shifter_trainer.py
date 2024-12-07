@@ -4,7 +4,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from spectrogram_dataset import SpectrogramDataset
 from tqdm import tqdm
-from genre_shifter_fully_connected import Genre_Shifter_Fully_Connected
+from Models.genre_shifter.genre_shifter_models import Genre_Shifter_Fully_Connected
 from autoencoder_conv import Autoencoder_FullyConv, Autoencoder_ConvLinear
 from Models.classifier import GenreClassifier
 from torch.utils.tensorboard import SummaryWriter
