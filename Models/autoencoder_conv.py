@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional as F
 
 # Autoencoder Hyperparameters
 ENCODER_DEPTH = 5          # Number of convolutional layers in the encoder
@@ -52,6 +53,55 @@ class Autoencoder_FullyConv(nn.Module):
         x = self.decoder(x)
         return x[:, :, :, :1290] # Crop the output to match the input size
     
+class AutoencoderLargeKernels(nn.Module):
+    """
+    6 layers encoder, 6 layers decoder
+    Input size is 128x1290
+    """
+    def __init__(self):
+        super(AutoencoderLargeKernels, self).__init__()
+        
+        encoder_ch      = [1, 16, 32, 64, 128, 256, 512]
+        encoder_kernels = [9, 7, 5, 3, 3, 3]
+        
+        decoder_ch = [512, 256, 128, 64, 32, 16, 1]
+        
+        # Encoder
+        self.encoder = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=9, stride=2, padding=4),  # Output: 64 x 64 x 645
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(64, 128, kernel_size=7, stride=2, padding=3),  # Output: 128 x 32 x 323
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(128, 256, kernel_size=5, stride=2, padding=2),  # Output: 256 x 16 x 162
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1),  # Output: 512 x 8 x 81
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(512, 1024, kernel_size=3, stride=2, padding=1),  # Output: 1024 x 4 x 41
+            nn.LeakyReLU(0.2, inplace=True),
+        )
+        
+        # Decoder
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(1024, 512, kernel_size=3, stride=2, padding=1, output_padding=(1, 0)),  # Output: 512 x 8 x 81
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.ConvTranspose2d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=(1, 0)),  # Output: 256 x 16 x 162
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=(1, 1)),  # Output: 128 x 32 x 323
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.ConvTranspose2d(128, 64, kernel_size=7, stride=2, padding=3, output_padding=(1, 1)),  # Output: 64 x 64 x 645
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.ConvTranspose2d(64, 1, kernel_size=9, stride=2, padding=4, output_padding=(1, 1)),  # Output: 1 x 128 x 1290
+        )
+        
+    def forward(self, x):
+        # Add channel dimension to x
+        x = self.encoder(x)
+        x = self.decoder(x)
+        
+        # Add padding to match the output size of (128, 1290)
+        padded_output = F.pad(x, pad=(0, 2, 0, 0), mode='constant', value=0)
+        return padded_output
+        
 # Convolutional autoencoder with linear layers (latent space shape: [batch_size, 512(LATENT_VECTOR_SIZE)])
 # class Autoencoder_ConvLinear(nn.Module):
 #     def __init__(self):
