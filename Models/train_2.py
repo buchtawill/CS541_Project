@@ -14,7 +14,7 @@ from torch.utils.tensorboard import SummaryWriter
 from autoencoder_conv import *
 from spectrogram_dataset import SpectrogramDataset
 
-# import torchinfo
+import torchinfo
 
 NUM_EPOCHS = 100
 BATCH_SIZE = 4
@@ -73,7 +73,7 @@ def train_normal(model,
         tb_writer.add_scalar("Loss/train", train_loss, epoch + 1)
         tb_writer.add_scalar("Loss/test",  test_loss,  epoch + 1)
         
-        print(f'Epoch {epoch:>{6}} | Train loss: {train_loss:.8f} | Test Loss: {test_loss:.8f}', flush=True)
+        print(f'Epoch {epoch+1:>{6}} | Train loss: {train_loss:.8f} | Test Loss: {test_loss:.8f}', flush=True)
         
         # Step the scheduler to adjust the learning rate
         scheduler.step()
@@ -103,16 +103,13 @@ if __name__ == '__main__':
     # model = AutoencoderLargeKernels().to(device)
     model = Autoencoder_ConvLinear().to(device)
     
-    # model.load_state_dict(torch.load('./saved_weights/100E_5em4_b64.pth', weights_only=True))
-    
-    # torchinfo.summary(model, input_size=(4, 1, 128, 1290))
-    # exit()
+    torchinfo.summary(model, input_size=(1, 1, 128, 1290))
     
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARN_RATE)
-    print("INFO [train_2.py] Learning rate: ", LEARN_RATE)
-    print("INFO [train_2.py] Batch size:    ", BATCH_SIZE)
-    print("INFO [train_2.py] Num epochs:    ", NUM_EPOCHS)
+    print(f"INFO [train_2.py] Learning rate:             {LEARN_RATE}")
+    print(f"INFO [train_2.py] Batch size:                {BATCH_SIZE}")
+    print(f"INFO [train_2.py] Num epochs:                {NUM_EPOCHS}")
     
     # Get dataset
     seed = 50  # Set the seed for reproducibility
@@ -120,19 +117,17 @@ if __name__ == '__main__':
     print("INFO [train_2.py] Loading Tensor dataset")
     full_dataset = SpectrogramDataset('./data/normal_128m_512h_x_medium.pt')
     
-    # Create train and test datasets. Set small train set for faster training
-
-    train_dataset, valid_dataset, test_dataset = \
-            torch.utils.data.random_split(full_dataset, [0.85, 0.10, 0.05], generator=torch.Generator())
+    train_dataset, test_dataset = \
+            torch.utils.data.random_split(full_dataset, [0.95, 0.05], generator=torch.Generator())
     num_train_samples = len(train_dataset)
     print(f'INFO [train_2.py] Total num data samples:    {len(full_dataset)}')
-    print(f'INFO [train_2.py] Num of training samples:   {num_train_samples}')
-    print(f'INFO [train_2.py] Num of validation samples: {len(valid_dataset)}')
-    print(f'INFO [train_2.py] Num of test samples:       {len(test_dataset)}')
+    print(f'INFO [train_2.py] Num training samples:      {num_train_samples}')
+    # print(f'INFO [train_2.py] Num of validation samples: {len(valid_dataset)}')
+    print(f'INFO [train_2.py] Num test samples:          {len(test_dataset)}')
     
     # Get Dataloader
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    # valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_dataloader  = torch.utils.data.DataLoader(test_dataset,  batch_size=BATCH_SIZE, shuffle=True)
     print(f'INFO [train_2.py] Num training batches:      {len(train_dataloader)}', flush = True)
     scheduler = StepLR(optimizer=optimizer, step_size=10, gamma=0.8)
@@ -148,8 +143,9 @@ if __name__ == '__main__':
                  device=device)
                 
     tb_writer.flush()
-    torch.save(model.state_dict(), './conv_linear_1em4_100.pth')
+    torch.save(model.state_dict(), './conv_linear_1em4_100_12_8_h100.pth')
     
     tEnd = time.time()
     print(f"INFO [train_2.py] Ending script. Took {tEnd-tstart:.2f} seconds.")
     print(f"INFO [train_2.py] HH:MM:SS --> {sec_to_human(tEnd-tstart)}")
+    
