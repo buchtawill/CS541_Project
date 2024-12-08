@@ -18,7 +18,7 @@ from spectrogram_dataset import SpectrogramDataset
 
 NUM_EPOCHS = 100
 BATCH_SIZE = 4
-LEARN_RATE = 5e-4
+LEARN_RATE = 1e-4
 
 def model_dataloader_inference(model, dataloader, device, criterion, optimzer):
     """
@@ -102,6 +102,7 @@ if __name__ == '__main__':
     print(f'INFO [train_2.py] Python version: {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}')
     # model = AutoencoderLargeKernels().to(device)
     model = Autoencoder_ConvLinear().to(device)
+    
     # model.load_state_dict(torch.load('./saved_weights/100E_5em4_b64.pth', weights_only=True))
     
     # torchinfo.summary(model, input_size=(4, 1, 128, 1290))
@@ -109,6 +110,9 @@ if __name__ == '__main__':
     
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARN_RATE)
+    print("INFO [train_2.py] Learning rate: ", LEARN_RATE)
+    print("INFO [train_2.py] Batch size:    ", BATCH_SIZE)
+    print("INFO [train_2.py] Num epochs:    ", NUM_EPOCHS)
     
     # Get dataset
     seed = 50  # Set the seed for reproducibility
@@ -131,7 +135,7 @@ if __name__ == '__main__':
     valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_dataloader  = torch.utils.data.DataLoader(test_dataset,  batch_size=BATCH_SIZE, shuffle=True)
     print(f'INFO [train_2.py] Num training batches:      {len(train_dataloader)}', flush = True)
-    scheduler = StepLR(optimizer=optimizer, step_size=10, gamma=0.5)
+    scheduler = StepLR(optimizer=optimizer, step_size=10, gamma=0.8)
     tb_writer = SummaryWriter()
     
     train_normal(model=model, 
@@ -144,7 +148,7 @@ if __name__ == '__main__':
                  device=device)
                 
     tb_writer.flush()
-    torch.save(model.state_dict(), './conv_linear_weights.pth')
+    torch.save(model.state_dict(), './conv_linear_1em4_100.pth')
     
     tEnd = time.time()
     print(f"INFO [train_2.py] Ending script. Took {tEnd-tstart:.2f} seconds.")

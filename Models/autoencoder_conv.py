@@ -77,13 +77,13 @@ class AutoencoderLargeKernels(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1),  # Output: 512 x 8 x 81
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(512, 512, kernel_size=3, stride=2, padding=1),  # Output: 1024 x 4 x 41
+            nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1),  # Output: 1024 x 4 x 41
             nn.LeakyReLU(0.2, inplace=True),
         )
         
         # Decoder
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(512, 512, kernel_size=3, stride=(2, 4), padding=(1, 0), output_padding=(1, 0)),
+            nn.ConvTranspose2d(256, 512, kernel_size=3, stride=(2, 4), padding=(1, 0), output_padding=(1, 0)),
             nn.LeakyReLU(0.2, inplace=True),
             nn.ConvTranspose2d(512, 256, kernel_size=3, stride=(2, 3), padding=(1, 0), output_padding=(1, 1)),
             nn.LeakyReLU(0.2, inplace=True),
@@ -94,22 +94,22 @@ class AutoencoderLargeKernels(nn.Module):
             nn.ConvTranspose2d(64, 1, kernel_size=9, stride=2, padding=(4, 3), output_padding=(1, 1)),
         )
         
-        bottleneck_size = 4096
-        self.linear_down = nn.Linear(512 * 4 * 9, bottleneck_size)
-        self.linear_up = nn.Linear(bottleneck_size, 512 * 4 * 9)
+        # bottleneck_size = 4096
+        # self.linear_down = nn.Linear(512 * 4 * 9, bottleneck_size)
+        # self.linear_up = nn.Linear(bottleneck_size, 512 * 4 * 9)
         
     def forward(self, x):
         # Add channel dimension to x
         x = self.encoder(x)
-        x = torch.flatten(x, start_dim=1)
-        x = F.leaky_relu(self.linear_down(x), 0.1)
+        # x = F.leaky_relu(self.linear_down(x), 0.1)
         
-        # Encoded shape: [batch_size, 512, 4, 9] (verified)
+        # Encoded shape: [batch_size, 256, 4, 9] (verified)
         # print(f"Encoded shape: {x.shape}")
-        x = self.linear_up(x)
+        # x = torch.flatten(x, start_dim=1)
         
-        # x = x.view(-1, 512, 4, 9)
-        x = F.Unflatten(1, (512, 4, 9))
+        # x = torch.unflatten(x, dim=1, sizes=(256, 4, 9))
+        # 
+        # x = torch.unflatten(x, (256, 4, 9))
         
         x = self.decoder(x)
         

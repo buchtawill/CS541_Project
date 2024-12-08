@@ -2,10 +2,10 @@
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=4
 #SBATCH --mem=64g
-#SBATCH -J "train_large_autoencoder"
+#SBATCH -J "train_conv_linear"
 #SBATCH -p short
 #SBATCH -t 5:00:00
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:1
 #SBATCH -C H100|A100
 #SBATCH --mail-user=jwbuchta@wpi.edu
 #SBATCH --mail-type=BEGIN,FAIL,END
@@ -15,6 +15,7 @@ module load slurm #cuda12.1 #python/3.12.4
 
 now=$(date)
 echo "INFO [run.sh] Starting execution on $now"
+echo "INFO [run.sh] Training for CONV LINEAR architecture"
 
 #source /home/jwbuchta/CS539_Project/Autoencoder/venv_autoencoder/bin/activate
 #which $HOME/CS539_Project/Autoencoder/venv_autoencoder/bin/python
