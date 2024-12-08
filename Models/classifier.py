@@ -122,7 +122,8 @@ class GenreClassifier(nn.Module):
             nn.Linear(256, 128),
             nn.ReLU(),
             nn.Dropout(0.5),
-            nn.Linear(128, num_genres)
+            nn.Linear(128, num_genres),
+            nn.Softmax() # NOTE: added softmax
         )
 
         print(f"Initialized classifier with input size: {self._to_linear}")
@@ -312,7 +313,7 @@ def main():
     EPOCHS = 400
     LEARNING_RATE = 0.0001
     USE_CPU = True
-    MODEL_PATH = "genre_classifier_v2.pth"
+    MODEL_PATH = "genre_classifier_softmax_v1.pth"
 
     TRAIN_MODEL = False  # Set to False to only test pre-trained model
 
