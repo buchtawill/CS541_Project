@@ -5,11 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 # import IPython.display as ipd
 import os
-<<<<<<< HEAD
-import torch
-from tqdm import tqdm
-
-=======
 import csv
 import torch
 from tqdm import tqdm
@@ -36,7 +31,6 @@ GENRE_MAP_ID_NAME = {
     5       :   'Classical'
 }
 
->>>>>>> gen_truth
 """
 # Here are some fuctions that seem to corrupt the audio, but I'm keeping around in case we try to get mel spectrogram to work.
 def reconstruct_audio_mel_broken(mel_spec_db, n_fft, sr, hop_length):
@@ -100,7 +94,7 @@ def get_mel_db(path, n_fft=2048, hop_length=512, n_mels=256, sr=22050):
 
 if __name__=="__main__":
 
-    fma_path = 'fma_small'
+    fma_path = 'fma_medium'
     song_info = 'mp3_titles_and_genres_medium.csv'
 
     # Convert the spectrogram back to audio
@@ -123,16 +117,15 @@ if __name__=="__main__":
             if(genre_id not in GENRE_MAP_ID_NAME):
                 print(f"INFO: Not processing song {mp3_path}, id not in genre map")
             else:
-                print(f"  INFO: Processing song {mp3_path}. Genre: {genre_id}: {GENRE_MAP_ID_NAME[genre_id]} ", end='',)
+                print(f"  INFO: Processing song {mp3_path}. Genre: {genre_id}: {GENRE_MAP_ID_NAME[genre_id]} ", flush=True)
                 
                 if(os.path.isfile(mp3_path)):
                     # Catch librosa errors
                     try:
-                        mel_db = get_mel_db(mp3_path, hop_length=256, n_mels=128)
-                        if(mel_db.shape[1] >= 1580):
-                            print(f"Shape: {mel_db.shape}", flush=True)
-                            mel_db = mel_db[0:, 0:1580]
-                            # print("Spectrogram Shape: " + str(get_spectrogram_db(mp3_path).shape))
+                        mel_db = get_mel_db(mp3_path, hop_length=512, n_mels=128)
+                        if(mel_db.shape[1] >= 1290):
+                            print(f"        Shape: {mel_db.shape}", flush=True)
+                            mel_db = mel_db[0:, 0:1290]
                             spec_tensor = torch.from_numpy(mel_db)
                             
                             tensor_list.append(spec_tensor)
@@ -143,18 +136,36 @@ if __name__=="__main__":
                             else:
                                 counts[GENRE_MAP_ID_NAME[genre_id]] = 1
                         else:
-                            print(f"Not adding, shape: {mel_db.shape}")
+                            print(f"        Not adding, shape: {mel_db.shape}")
                     except:
                         print()
-                        print(f"  ERROR: Error opening {mp3_path}")
+                        print(f"        ERROR: Error opening {mp3_path}")
                         error_list.append(mp3_path)
     
     spectrogram_tensors = torch.stack(tensor_list)
     print(f"INFO: Spectrogram tensor shape: {spectrogram_tensors.shape}")
+    
+    max_value = torch.max(spectrogram_tensors)
+    print(f"INFO: Maximum value in spectrogram tensors: {max_value}")
+    
+    min_value = torch.min(spectrogram_tensors)
+    print(f"INFO: Minimum value in spectrogram tensors: {min_value}")
+    
+    # Normalize the spectrogram tensors
+    spectrogram_tensors = (spectrogram_tensors - min_value) / (max_value - min_value)
+    
+    # Add a channel dimension
+    spectrogram_tensors = spectrogram_tensors.unsqueeze(1)
+    
+    #Print the min and max after normalizing
+    print(f"INFO: Maximum value in spectrogram tensors after normalization: {torch.max(spectrogram_tensors)}")
+    print(f"INFO: Minimum value in spectrogram tensors after normalization: {torch.min(spectrogram_tensors)}")
+    
     genre_tensors = torch.tensor(genre_list)
     print(f"INFO: Number of errors: {len(error_list)}")
-    torch.save(spectrogram_tensors, "spec_tens_256hop_128mel_x.pt")
-    torch.save(genre_tensors, "spec_tens_256hop_128mel_y.pt")
+    torch.save(spectrogram_tensors, "normal_128m_512h_x.pt")
+    torch.save(genre_tensors, "normal_128m_512h_y.pt")
+    print("INFO: Saved tensors to 'normal_128m_512h_x' and '..._y.pt'")
     print("Genre breakdown:")
     for key in counts:
         print(f"{key}: {counts[key]}")
