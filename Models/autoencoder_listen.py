@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import IPython.display as ipd
 from mutagen import File
-from autoencoder_conv import Autoencoder_FullyConv
+from autoencoder_conv import Autoencoder_FullyConv, Autoencoder_ConvLinear, AutoencoderLargeKernels
 
 # Qualitatively allows one to listen to autoencoder
 
@@ -18,7 +18,7 @@ from autoencoder_conv import Autoencoder_FullyConv
 # Experimental Pop Models\data\fma_small\153\153956.mp3
 
 # Neural Network
-autoencoder_NN_path = r"trained_autoencoder_conv_3.pth"
+autoencoder_NN_path = r"Models\data\models\best\conv_linear_1em4_100_12_8_h100.pth"
 autoencoder_NN_state_dict = torch.load(autoencoder_NN_path, weights_only=True)
 Autoencoder_NN = Autoencoder_FullyConv()
 Autoencoder_NN.load_state_dict(autoencoder_NN_state_dict)
@@ -27,7 +27,7 @@ Autoencoder_NN.eval()
 # r"Models\data\fma_small\043\043020.mp3"
 # input_song = r"Models\data\fma_small\112\112066.mp3"
 # input_song = r"Models\test_song_001083.mp3" # Tom's path
-input_song = r"Path\to\test_song.mp3"
+input_song = r"Models\data\Mariah Carey - All I Want For Christmas Is You.mp3"
 sr = 22050
 
 signal, sr = librosa.load(input_song, sr=sr)
@@ -39,8 +39,7 @@ mel_db = mel_db[:, :1290]
 # Normalize the mel_db values from -80 to 0 into the range 0 to 1
 mel_db_normalized = (mel_db + 80) / 80
 
-reconstructed_mel = reconstruct_audio_mel(mel_db, sr=sr)
-print("MELDB RECON", mel_db.shape)
+reconstructed_mel = reconstruct_audio_mel(mel_db, sr=sr) * 5
 with torch.no_grad():
     autoencoded_mel = Autoencoder_NN(torch.tensor(
         mel_db_normalized.reshape(1, 1, mel_db_normalized.shape[0], mel_db_normalized.shape[1]),
@@ -59,7 +58,7 @@ print(f"MSE Loss: {loss.item():.6f}")
 # Convert autoencoded Mel spectrogram to NumPy and denormalize
 autoencoded_mel_arr = autoencoded_mel.cpu().detach().numpy()
 mel_db_autoencoded = (autoencoded_mel_arr * 80) - 80
-reconstructed_nn_mel = reconstruct_audio_mel(mel_db_autoencoded.reshape(mel_db.shape[0], mel_db.shape[1]), sr=sr)
+reconstructed_nn_mel = reconstruct_audio_mel(mel_db_autoencoded.reshape(mel_db.shape[0], mel_db.shape[1]), sr=sr) * 8
 
 def play_audio(audio, sr, description):
     print(f"\nPlaying {description} (Ctrl+C to skip)")
