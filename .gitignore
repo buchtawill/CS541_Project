@@ -1,4 +1,7 @@
 /Models/data/fma_small
+/genre_shifter_models
 */*.pt
 */*.out
 *.pth
+/runs
+/Models/architecture_visualization/outputs/*

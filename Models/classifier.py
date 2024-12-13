@@ -32,7 +32,7 @@ class MelSpectrogramDataset3Sec(Dataset):
             17: 3,  #folk
             1235: 4,  #instrumental
             10: 5,  #pop
-            5: 6  #classical
+            #5: 6  #classical
         }
 
         new_labels = []
@@ -93,9 +93,9 @@ class MelSpectrogramDataset3Sec(Dataset):
         return segment, label
 
 
-class GenreClassifier(nn.Module):
+class GenreClassifierOld(nn.Module):
     def __init__(self, input_shape=(1, 128, 129), num_genres=7):
-        super(GenreClassifier, self).__init__()
+        super(GenreClassifierOld, self).__init__()
 
         self.features = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=3, padding=1),
@@ -123,7 +123,6 @@ class GenreClassifier(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(128, num_genres),
-            nn.Softmax() # NOTE: added softmax
         )
 
         print(f"Initialized classifier with input size: {self._to_linear}")
@@ -135,6 +134,53 @@ class GenreClassifier(nn.Module):
         x = self.classifier(x)
         return x
 
+
+class GenreClassifier(nn.Module):
+    def __init__(self, input_shape=(1, 128, 129), num_genres=6):
+        super(GenreClassifier, self).__init__()
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=3),
+            nn.ReLU(),
+            nn.BatchNorm2d(32),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+            nn.Dropout(0.2)
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=3),
+            nn.ReLU(),
+            nn.BatchNorm2d(64),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+            nn.Dropout(0.1)
+        )
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=2),
+            nn.ReLU(),
+            nn.BatchNorm2d(64),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
+            nn.Dropout(0.1)
+        )
+        with torch.no_grad():
+            x = torch.zeros(1, *input_shape)
+            x = self.conv1(x)
+            x = self.conv2(x)
+            x = self.conv3(x)
+            self._to_linear = x.numel() // x.size(0)
+        self.classifier = nn.Sequential(
+            nn.Linear(self._to_linear, 128),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(128, num_genres),
+            nn.Softmax(dim=1)
+        )
+        print(f"Initialized classifier with input size: {self._to_linear}")
+        print(f"Number of output classes: {num_genres}")
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
 
 def train_model(model, train_loader, val_loader, criterion, optimizer, device, epochs):
     """

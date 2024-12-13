@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 import torch.nn as nn
 
 # Autoencoder Hyperparameters
@@ -9,18 +10,20 @@ ENCODER_CHANNELS = [1, 8, 16, 32]  # Channels for each encoder layer
 DECODER_CHANNELS = [32, 16, 8, 1]  # Channels for each decoder layer
 STRIDE = 2                 # Stride for convolutional layers
 PADDING = 1                # Padding for convolutional layers
-LATENT_VECTOR_SIZE = 1024   # Size of the encoded feature vector (if using linear)
+LATENT_VECTOR_SIZE = 4096   # Size of the encoded feature vector (if using linear)
 
 class AutoencoderLargeKernels(nn.Module):
     """
-    6 layers encoder, 6 layers decoder
     Input size is 128x1290
     """
     def __init__(self):
         super(AutoencoderLargeKernels, self).__init__()
+        
         encoder_ch      = [1, 16, 32, 64, 128, 256, 512]
         encoder_kernels = [9, 7, 5, 3, 3, 3]
+        
         decoder_ch = [512, 256, 128, 64, 32, 16, 1]
+        
         # Encoder
         self.encoder = nn.Sequential(
             nn.Conv2d(1, 64, kernel_size=9, stride=(2, 4), padding=4),  # Output: 64 x 64 x 645
@@ -31,9 +34,10 @@ class AutoencoderLargeKernels(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1),  # Output: 512 x 8 x 81
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1),  # Output: 1024 x 4 x 41
+            nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1),  # Output: 256 x 4 x 9
             nn.LeakyReLU(0.2, inplace=True),
         )
+        
         # Decoder
         self.decoder = nn.Sequential(
             nn.ConvTranspose2d(256, 512, kernel_size=3, stride=(2, 4), padding=(1, 0), output_padding=(1, 0)),
@@ -46,18 +50,28 @@ class AutoencoderLargeKernels(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             nn.ConvTranspose2d(64, 1, kernel_size=9, stride=2, padding=(4, 3), output_padding=(1, 1)),
         )
+        
         # bottleneck_size = 4096
-        # self.linear_down = nn.Linear(512 * 4 * 9, bottleneck_size)
-        # self.linear_up = nn.Linear(bottleneck_size, 512 * 4 * 9)
+        self.linear_down = nn.Linear(256 * 4 * 9, LATENT_VECTOR_SIZE)
+        self.linear_up = nn.Linear(LATENT_VECTOR_SIZE, 256 * 4 * 9)
+        
     def forward(self, x):
         # Add channel dimension to x
         x = self.encoder(x)
-        # x = F.leaky_relu(self.linear_down(x), 0.1)
+        
         # Encoded shape: [batch_size, 256, 4, 9] (verified)
         # print(f"Encoded shape: {x.shape}")
         x = torch.flatten(x, start_dim=1)
+
+        x = F.leaky_relu(self.linear_down(x), 0.1)
+        
+        # print(f"Latent shape: {x.shape}")
+        
+        x = self.linear_up(x)
         x = torch.unflatten(x, dim=1, sizes=(256, 4, 9))
+
         x = self.decoder(x)
+        
         return x
     
 # Fully convolutional autoencoder (latent space shape: [batch_size, 256, 16, 162])
