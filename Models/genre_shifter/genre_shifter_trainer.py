@@ -59,28 +59,71 @@ def split_clips_genre_classifier_output(genre_input, Genre_Classifier_NN):
     
     return genre_classifier_outputs
 
-def get_loss(mel_input, genre_input, genre_output, model, Autoencoder_NN, Genre_Classifier_NN):
-    # Get encoded output for model
-    #print("TEST AE OUT ", Autoencoder_NN.encoder(mel_input).shape)
-    shifted_encoder_output = Autoencoder_NN.encoder(mel_input)
-    # TODO add one hot encoding to this
+def genre_shifter_loss(mel_input, decoder_output, classifier_output, alpha):
+    # TODO update documentation and fix function
+    """
+        Calculate the loss for the genre shifter model using a combination of autoencoder reconstruction
+        loss and genre classification loss.
+
+        The function balances two objectives:
+        1. Maintaining similarity to the original audio (via autoencoder)
+        2. Changing the perceived genre (via genre classifier)
+
+        Args:
+            outputs (torch.Tensor): Output spectrograms from the genre shifter model
+                                  Shape: (batch_size, channels, freq_bins, time_frames)
+            batch (torch.Tensor): Original input spectrograms and their genre labels
+                                 Shape matches outputs for spectrogram data
+            autoencoder_model_path (str): Path to the pretrained autoencoder model weights
+            classifier_model_path (str): Path to the pretrained genre classifier model weights
+            alpha (float): Weight factor between similarity and classification loss
+                          Range [0,1] where:
+                          - alpha = 0: Focus entirely on changing genre
+                          - alpha = 1: Focus entirely on maintaining similarity
+
+        Returns:
+            torch.Tensor: Combined loss value balancing similarity preservation and genre modification
+
+        Notes:
+            - Processes spectrograms in 3-second segments (129 frames) for genre classification
+            - Uses pretrained models for both autoencoder and genre classifier
+            - Genre classifier expects 7 genre classes
+            - All tensor operations are performed with gradient calculation disabled
+        """   
+    # Calculate loss TODO fix genre classifier portion of this
+    with torch.no_grad():
+        autoencoder_outputs = Autoencoder_NN(mel_input) # TODO this need to be the output of the autoencoder WITH THE GENRE SHIFTER
+
+        # Extract dimensions from outputs
+        genre_batch_size, channels, freq_bins, time_frames = genre_input.shape # NOTE: outputs is genre_outputs
+        segment_length = 129  # 3 seconds of frames as required by GenreClassifier
+
+        num_segments = time_frames // segment_length
+
+        # Split into 3-second segments using unfold operation
+        segments = genre_input.unfold(3, segment_length, segment_length)
+        # Adjust dimensions to match expected input format
+        segments = segments.transpose(1, 2)
+        # Reshape into format expected by classifier: (batch * segments, channels, freq_bins, segment_length)
+        segments = segments.reshape(-1, 1, freq_bins, segment_length)
+
+        genre_classifier_outputs = Genre_Classifier_NN(segments)
+        genre_classifier_outputs = genre_classifier_outputs.reshape(genre_batch_size, num_segments, -1)
+        genre_classifier_outputs = torch.mean(genre_classifier_outputs, dim=1)
+
+    similarity_loss = nn.MSELoss()(autoencoder_outputs, mel_input)
+
+    # Convert logits to probabilities
+    genre_probs = nn.functional.softmax(genre_classifier_outputs, dim=1)
+
+    # Extract probability of the target genre for each sample
+    target_probs = torch.gather(genre_probs, 1, genre_input.unsqueeze(1))
     
-    combined_tensor = torch.cat((shifted_encoder_output, genre_input, genre_output), dim=1)
-    genre_shifter_output = model(combined_tensor) # Run encoder output into genre shifter
-    shifted_decoder_output = Autoencoder_NN.decoder(genre_shifter_output)
-    shifted_decoder_output =  shifted_decoder_output[:, :, :, :1290] 
-    #print("SHIFTED DECODER OUTPUT", shifted_decoder_output.shape)
+    # Classification loss is mean probability of original genre (want to minimize)
+    classification_loss = torch.mean(target_probs)
 
-    classification_means = split_clips_genre_classifier_output(shifted_decoder_output, Genre_Classifier_NN)
-    
-    mse_loss = nn.MSELoss()
-    similarity_loss = mse_loss(mel_input, shifted_decoder_output) # From keeping song similar
-
-    ce_loss = nn.CrossEntropyLoss()
-    classification_loss = ce_loss(classification_means, genre_output) 
-
-    loss = (ALPHA * similarity_loss) + (1 - ALPHA) * classification_loss
-    return loss
+    overall_loss = (alpha * similarity_loss) + (1 - alpha) * classification_loss
+    return overall_loss
 
 def train_genre_shifter(model, Autoencoder_NN, Genre_Classifier_NN, train_loader, optimizer, device, writer, epoch):
     model.train()
@@ -127,7 +170,8 @@ def main():
 
     # Initialize dataset and dataloader
     try:
-        genre_data = GenreShifterDataset(DATASET_X, DATASET_Y) # TODO add training, testing, validation splits
+        genre_data = GenreShifterDataset(DATASET_X, DATASET_Y)
+        train_loader = DataLoader(genre_data, batch_size=BATCH_SIZE, shuffle=True)
     except Exception as e:
         print(f"Failed to load dataset: {e}")
         return
