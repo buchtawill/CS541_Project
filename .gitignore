@@ -1,0 +1,12 @@
+/Models/data/fma_small
+/genre_shifter_models
+*/*.pt
+*/*.out
+env
+*.pth
+/runs
+/Models/architecture_visualization/outputs/*
+/Models/data/*.out
+/Models/data/*.csv
+/Models/data/*.txt
+!/Models/data/README.txt
